@@ -2,7 +2,6 @@
 一个轻量级的 AI API 代理服务器，支持 OpenAI 兼容接口。基于 Vercel serverless functions 构建。
  
 
-```markdown
 # AI API 代理服务
 
 一个轻量级的 AI API 代理服务器，支持 OpenAI 兼容接口。基于 Vercel serverless functions 构建。
@@ -53,7 +52,7 @@ curl https://你的部署域名.vercel.app/v1/chat/completions \
   -H "Authorization: Bearer $OPENAI_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model": "gpt-3.5-turbo"}'
-```
+
 
 ## 环境变量
 
