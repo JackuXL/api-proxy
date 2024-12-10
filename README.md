@@ -24,7 +24,7 @@
 
 ### 一键部署
 
-[![使用 Vercel 部署](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/你的用户名/你的仓库名)
+[![使用 Vercel 部署](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/sigazen/api-proxy)
 
 ### 手动部署步骤
 
