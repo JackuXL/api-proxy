@@ -21,25 +21,7 @@
 
     部署完成后，Vercel 会为你生成一个应用的访问地址 (例如：`https://your-app-name.vercel.app`)。你可以使用这个地址替换原本的 API 地址，然后就可以像使用官方 API 一样发送请求了。
 
-    **示例 (Python):**
-
-    ```python
-    import openai
-
-    # 使用 Vercel 部署后的地址
-    openai.api_base = "https://your-app-name.vercel.app/api" # 注意这里添加了 /api
-    openai.api_key = "your_vercel_app_api_key" # 如果你在vercel设置了 YOUR_VERCEL_APP_API_KEY, 那这里就填对应的值
-
-    response = openai.Completion.create(
-      engine="text-davinci-003",
-      prompt="你好",
-      max_tokens=60
-    )
-
-    print(response)
-    ```
-
-
+  
 **提示：**
 
 *   `BASE_URL` 可以根据你的需要进行配置，例如你可以将其设置为其他 API 服务的地址，比如 `https://api.example.com`。
