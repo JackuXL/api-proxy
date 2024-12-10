@@ -1,4 +1,6 @@
-const API_KEYS = (process.env.API_KEYS || '').split(',').filter(key => key.trim());
+const API_KEYS = process.env.API_KEYS ?
+    process.env.API_KEYS.split(',').map(key => key.trim()).filter(Boolean) :
+    [];
 const BASE_URL = process.env.BASE_URL || 'https://api.openai.com';
 
 let currentKeyIndex = 0;
@@ -52,12 +54,10 @@ async function proxyRequest(req, res, apiKey) {
             body: body,
         });
 
-        // 转发响应头
         for (const [key, value] of response.headers.entries()) {
             res.setHeader(key, value);
         }
 
-        // 检查内容类型并相应处理
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('text/event-stream')) {
             return handleStream(response, res);
@@ -71,16 +71,17 @@ async function proxyRequest(req, res, apiKey) {
 }
 
 module.exports = async (req, res) => {
-    // 添加CORS头
-    res.setHeader('Access-Control-Allow-Origin', '*');*
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-    // 处理 OPTIONS 请求
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
     }
+
+    // 添加调试日志
+    console.log('Available API keys:', API_KEYS.length);
 
     if (!API_KEYS.length) {
         return res.status(500).json({
