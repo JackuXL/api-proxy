@@ -52,7 +52,7 @@ curl https://你的部署域名.vercel.app/v1/chat/completions \
   -H "Authorization: Bearer $OPENAI_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model": "gpt-3.5-turbo"}'
-
+```
 
 ## 环境变量
 
