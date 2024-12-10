@@ -65,6 +65,10 @@ async function proxyRequest(req, res, apiKey) {
     // 添加这行日志，打印完整的 Headers 对象
     console.log('Response headers from target:', response.headers);
 
+    // 记录完整的响应体
+    const responseText = await response.text();
+    console.log('Response body from target:', responseText);
+
     // 只转发这两个标头
     const headersToForward = ['content-type', 'authorization'];
     for (const [key, value] of response.headers.entries()) {
@@ -72,13 +76,10 @@ async function proxyRequest(req, res, apiKey) {
         res.setHeader(key, value);
       }
     }
+    
+    // 将原始响应体发送给客户端
+    res.status(response.status).send(responseText);
 
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('text/event-stream')) {
-      return handleStream(response, res);
-    } else {
-      return handleNonStream(response, res);
-    }
   } catch (error) {
     console.error('Proxy error:', error);
     throw error;
