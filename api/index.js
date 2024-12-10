@@ -28,8 +28,7 @@ async function handleNonStream(response, res) {
 }
 
 async function proxyRequest(req, res, apiKey) {
-    const path = req.url.replace('/v1/', '');
-    const targetUrl = `${BASE_URL}/v1/${path}`;
+    const targetUrl = `${BASE_URL}${req.url}`;
 
     const headers = {
         'Authorization': `Bearer ${apiKey}`,
@@ -80,7 +79,6 @@ module.exports = async (req, res) => {
         return;
     }
 
-    // 添加调试日志
     console.log('Available API keys:', API_KEYS.length);
 
     if (!API_KEYS.length) {
