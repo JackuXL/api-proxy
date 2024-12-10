@@ -1,36 +1,113 @@
-export default async function handler(req, res) {
-  const baseUrl = process.env.BASE_URL || 'https://api.openai.com';
-  
-  // 从环境变量获取多个 API Key，用逗号分隔
-  const apiKeys = (process.env.API_KEYS || '').split(',').filter(key => key.trim());
-  
-  // 使用静态变量记录当前使用的 key 的索引
-  if (typeof handler.currentKeyIndex === 'undefined') {
-    handler.currentKeyIndex = 0;
+export const config = {
+  runtime: 'edge',
+};
+
+const API_KEYS = (process.env.API_KEYS || '').split(',').filter(key => key.trim());
+const BASE_URL = process.env.BASE_URL || 'https://api.openai.com';
+
+let currentKeyIndex = 0;
+
+async function handleStream(response, res) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let done = false;
+
+  while (!done) {
+    const { value, done: streamDone } = await reader.read();
+    done = streamDone;
+    if (value) {
+      const chunk = decoder.decode(value, { stream: true });
+      res.write(chunk); // 将数据块写入响应流
+    }
   }
 
-  // 获取当前要使用的 API Key
-  const currentKey = apiKeys[handler.currentKeyIndex];
-  
-  // 更新索引，实现轮询
-  handler.currentKeyIndex = (handler.currentKeyIndex + 1) % apiKeys.length;
+  res.end(); // 结束响应流
+}
 
-  const path = req.url.replace('/v1/', '');
-  const targetUrl = `${baseUrl}/v1/${path}`;
+async function handleNonStream(response, res) {
+  const data = await response.json();
+  res.status(response.status).json(data);
+}
+
+async function proxyRequest(req, res, apiKey) {
+  const path = req.url.replace(new URL(req.url).origin, '').replace('/v1/', '');
+  const targetUrl = `${BASE_URL}/v1/${path}`;
+
+  // 读取请求体, 并根据情况传递给 fetch
+  let body = null;
+  if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
+    body = req.body;
+  }
+
+  // 构造转发请求的 headers
+  const headers = {
+    'Authorization': `Bearer ${apiKey}`,
+  };
+  for (const [key, value] of req.headers.entries()) {
+    if (!['host', 'authorization'].includes(key.toLowerCase())) {
+      headers[key] = value;
+    }
+  }
 
   try {
     const response = await fetch(targetUrl, {
       method: req.method,
-      headers: {
-        'Authorization': `Bearer ${currentKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: req.method === 'POST' ? JSON.stringify(req.body) : undefined,
+      headers: headers,
+      body: body,
+      duplex: 'half', // 支持流式请求
     });
 
-    const data = await response.json();
-    res.status(response.status).json(data);
+    // 转发响应头
+    for (const [key, value] of response.headers.entries()) {
+      res.setHeader(key, value);
+    }
+
+    // 检查是否是流式响应
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('text/event-stream')) {
+      // 处理流式响应
+      return handleStream(response, res);
+    } else {
+      // 处理非流式响应
+      return handleNonStream(response, res);
+    }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Proxy error:', error);
+    throw error; // 继续抛出错误，以便上层处理
   }
+}
+
+export default async function handler(req, res) {
+  if (!API_KEYS.length) {
+    return new Response(JSON.stringify({ error: 'API keys not configured' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  let retries = 0;
+  const maxRetries = API_KEYS.length;
+
+  while (retries < maxRetries) {
+    const apiKey = API_KEYS[currentKeyIndex];
+    currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length; // 循环使用 key
+
+    try {
+      await proxyRequest(req, res, apiKey);
+      return; // 请求成功，直接返回
+    } catch (error) {
+      retries++;
+      console.warn(`Request failed with key ${apiKey}, retrying... (${retries}/${maxRetries})`);
+      // 如果不是最后一个 key，则等待一段时间再重试
+      if (retries < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 500)); // 等待 500ms
+      }
+    }
+  }
+
+  // 所有 key 都尝试失败
+  return new Response(JSON.stringify({ error: 'All API keys failed' }), {
+    status: 500,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
