@@ -2,8 +2,8 @@
   "version": 2,
   "routes": [
     {
-      "src": "/v1/(.*)",
-      "dest": "/api/proxy.js"
+      "src": "/api/(.*)",
+      "dest": "/api/index.js"
     }
   ]
 }
