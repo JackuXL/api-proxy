@@ -28,7 +28,16 @@ async function handleNonStream(response, res) {
 }
 
 async function proxyRequest(req, res, apiKey) {
-    const targetUrl = `${BASE_URL}${req.url}`;
+    // 修改这里的逻辑以适应新的路由
+    const url = req.url;
+    let targetUrl;
+    if (url.startsWith('/api')) {
+        targetUrl = `${BASE_URL}${url.replace('/api', '/v1')}`;
+    } else {
+        targetUrl = `${BASE_URL}${url}`;
+    }
+
+    console.log('targetUrl:', targetUrl);
 
     const headers = {
         'Authorization': `Bearer ${apiKey}`,
@@ -70,7 +79,7 @@ async function proxyRequest(req, res, apiKey) {
 }
 
 module.exports = async (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Origin', '*');*
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
