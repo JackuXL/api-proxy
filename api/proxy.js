@@ -79,7 +79,14 @@ async function proxyRequest(req, res, apiKey) {
 
 export default async function handler(req, res) {
   if (!API_KEYS.length) {
-    return new Response(JSON.stringify({ error: 'API keys not configured' }), {
+    return new Response(JSON.stringify({
+      error: {
+        message: "API_KEYS environment variable is not set or is empty. Please configure it in your Vercel project settings.",
+        type: "config_error",
+        param: "API_KEYS",
+        code: "missing_api_keys"
+      }
+    }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -106,7 +113,14 @@ export default async function handler(req, res) {
   }
 
   // 所有 key 都尝试失败
-  return new Response(JSON.stringify({ error: 'All API keys failed' }), {
+  return new Response(JSON.stringify({
+     error: {
+        message: "All API keys failed",
+        type: "api_error",
+        param: null,
+        code: "all_keys_failed"
+      }
+  }), {
     status: 500,
     headers: { 'Content-Type': 'application/json' },
   });
