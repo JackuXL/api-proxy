@@ -26,17 +26,14 @@ async function handleNonStream(response, res) {
 }
 
 async function proxyRequest(req, res, apiKey) {
-    // 获取完整的路径
-    const path = req.url.replace(/^\/api\/proxy/, '');
+    const path = req.url.replace('/v1/', '');
     const targetUrl = `${BASE_URL}/v1/${path}`;
 
-    // 准备请求头
     const headers = {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': req.headers['content-type'] || 'application/json',
     };
 
-    // 处理请求体
     let body = null;
     if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
         if (typeof req.body === 'string') {
@@ -51,17 +48,18 @@ async function proxyRequest(req, res, apiKey) {
     try {
         const response = await fetch(targetUrl, {
             method: req.method,
-            headers,
-            body,
+            headers: headers,
+            body: body,
         });
 
         // 转发响应头
-        Object.entries(response.headers.raw()).forEach(([key, values]) => {
-            res.setHeader(key, values);
-        });
+        for (const [key, value] of response.headers.entries()) {
+            res.setHeader(key, value);
+        }
 
+        // 检查内容类型并相应处理
         const contentType = response.headers.get('content-type');
-        if (contentType?.includes('text/event-stream')) {
+        if (contentType && contentType.includes('text/event-stream')) {
             return handleStream(response, res);
         } else {
             return handleNonStream(response, res);
@@ -72,10 +70,9 @@ async function proxyRequest(req, res, apiKey) {
     }
 }
 
-// 使用 export default 替代 module.exports
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
     // 添加CORS头
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Origin', '*');*
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -123,4 +120,4 @@ export default async function handler(req, res) {
             code: "all_keys_failed"
         }
     });
-}
+};
