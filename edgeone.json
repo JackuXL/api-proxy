@@ -1,0 +1,12 @@
+{
+  "routes": [
+    {
+      "source": "/v1/(.*)",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/",
+      "destination": "/api/index"
+    }
+  ]
+}
